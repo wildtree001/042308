@@ -32,63 +32,98 @@ var isTransitioning = false;
 var themes = {
     starry: {
         name: '星空',
+        nameEn: 'Starry',
+        icon: '✦',
         background: 'linear-gradient(45deg, #0a0a20 0, #1a1a3a 25%, #0d1b2a 60%)',
         backgroundColor1: '#0a0a20',
         backgroundColor2: '#1a1a3a',
         backgroundColor3: '#0d1b2a',
+        buttonColor: '#ffffff',
+        buttonBg: 'rgba(255,255,255,0.1)',
+        buttonBorder: 'rgba(255,255,255,0.4)',
         particleColor: 0xffffff,
         particleShape: 'circle',
-        animationSpeed: 0.08,
-        rotationSpeed: 0.0015,
-        particleOpacity: 0.15,
-        particleScale: 4,
-        explosionColor: 0xffff88
+        animationSpeed: 0.04,
+        rotationSpeed: 0.001,
+        particleOpacity: 0.12,
+        particleScale: 3,
+        explosionColor: 0xffffaa,
+        waveAmplitude: 30,
+        pulseIntensity: 0.3
     },
     ocean: {
         name: '海洋',
-        background: 'linear-gradient(45deg, #006994 0, #00a8cc 25%, #005f73 60%)',
-        backgroundColor1: '#006994',
-        backgroundColor2: '#00a8cc',
-        backgroundColor3: '#005f73',
+        nameEn: 'Ocean',
+        icon: '◈',
+        background: 'linear-gradient(45deg, #004e64 0, #00a5cf 25%, #007ea7 60%)',
+        backgroundColor1: '#004e64',
+        backgroundColor2: '#00a5cf',
+        backgroundColor3: '#007ea7',
+        buttonColor: '#00e5ff',
+        buttonBg: 'rgba(0,229,255,0.1)',
+        buttonBorder: 'rgba(0,229,255,0.5)',
         particleColor: 0x00ffff,
         particleShape: 'diamond',
         animationSpeed: 0.12,
         rotationSpeed: 0.0025,
         particleOpacity: 0.2,
         particleScale: 5,
-        explosionColor: 0x00ccff
+        explosionColor: 0x00ddff,
+        waveAmplitude: 60,
+        pulseIntensity: 0.6
     },
     fire: {
         name: '火焰',
-        background: 'linear-gradient(45deg, #1a0a0a 0, #3a0a0a 25%, #2a0a0a 60%)',
-        backgroundColor1: '#1a0a0a',
-        backgroundColor2: '#3a0a0a',
-        backgroundColor3: '#2a0a0a',
+        nameEn: 'Fire',
+        icon: '★',
+        background: 'linear-gradient(45deg, #1a0505 0, #4a0a0a 25%, #2a0505 60%)',
+        backgroundColor1: '#1a0505',
+        backgroundColor2: '#4a0a0a',
+        backgroundColor3: '#2a0505',
+        buttonColor: '#ff6600',
+        buttonBg: 'rgba(255,102,0,0.15)',
+        buttonBorder: 'rgba(255,102,0,0.6)',
         particleColor: 0xff6600,
         particleShape: 'star',
-        animationSpeed: 0.15,
-        rotationSpeed: 0.003,
-        particleOpacity: 0.25,
-        particleScale: 6,
-        explosionColor: 0xff3300
+        animationSpeed: 0.25,
+        rotationSpeed: 0.004,
+        particleOpacity: 0.28,
+        particleScale: 7,
+        explosionColor: 0xff4400,
+        waveAmplitude: 80,
+        pulseIntensity: 0.9
     },
     aurora: {
         name: '极光',
-        background: 'linear-gradient(45deg, #0a1a0a 0, #1a3a1a 25%, #0a2a0a 60%)',
-        backgroundColor1: '#0a1a0a',
-        backgroundColor2: '#1a3a1a',
-        backgroundColor3: '#0a2a0a',
+        nameEn: 'Aurora',
+        icon: '▲',
+        background: 'linear-gradient(45deg, #051a05 0, #0a3a1a 25%, #052a15 60%)',
+        backgroundColor1: '#051a05',
+        backgroundColor2: '#0a3a1a',
+        backgroundColor3: '#052a15',
+        buttonColor: '#00ff88',
+        buttonBg: 'rgba(0,255,136,0.1)',
+        buttonBorder: 'rgba(0,255,136,0.5)',
         particleColor: 0x00ff88,
         particleShape: 'triangle',
-        animationSpeed: 0.1,
-        rotationSpeed: 0.002,
-        particleOpacity: 0.18,
-        particleScale: 5,
-        explosionColor: 0x88ff00
+        animationSpeed: 0.08,
+        rotationSpeed: 0.0018,
+        particleOpacity: 0.16,
+        particleScale: 4,
+        explosionColor: 0x66ff00,
+        waveAmplitude: 45,
+        pulseIntensity: 0.5
     }
 };
 
 var previousThemeData = null;
+
+// 粒子形状切换相关变量
+var shapeTransitionParticles = [];
+var isShapeTransitioning = false;
+var shapeTransitionProgress = 1;
+var oldParticles = [];
+var newParticles = [];
 
 function webglWave(action, target){
 
@@ -781,13 +816,19 @@ function onDocumentTouchClick(event) {
 
 // 主题切换函数
 function switchTheme(themeName) {
-    if (!themes[themeName] || themeName === currentTheme) {
+    if (!themes[themeName] || themeName === currentTheme || isTransitioning || isShapeTransitioning) {
         return;
     }
 
+    var oldTheme = themes[currentTheme];
+    var newTheme = themes[themeName];
+
+    // 检查是否需要形状过渡
+    var needsShapeTransition = oldTheme.particleShape !== newTheme.particleShape;
+
     // 保存当前主题数据用于过渡
     previousThemeData = {
-        theme: themes[currentTheme],
+        theme: oldTheme,
         particleColors: []
     };
 
@@ -799,11 +840,175 @@ function switchTheme(themeName) {
     themeTransitionProgress = 0;
     isTransitioning = true;
 
-    // 更新背景
-    updateBackgroundGradient();
+    // 如果需要形状过渡，准备新粒子
+    if (needsShapeTransition) {
+        prepareShapeTransition(newTheme);
+    }
+
+    // 更新背景（带过渡）
+    updateBackgroundGradientWithTransition(oldTheme, newTheme);
 
     // 更新主题按钮状态
     updateThemeButtons();
+}
+
+// 准备形状过渡 - 创建新形状的粒子
+function prepareShapeTransition(newTheme) {
+    oldParticles = particles_globe.slice();
+    newParticles = [];
+
+    for (var i = 0; i < oldParticles.length; i++) {
+        var oldParticle = oldParticles[i];
+
+        var material = new THREE.SpriteCanvasMaterial({
+            color: newTheme.particleColor,
+            transparent: true,
+            program: createParticleProgram(newTheme.particleShape)
+        });
+
+        var newParticle = new THREE.Sprite(material);
+        newParticle.position.copy(oldParticle.position);
+        newParticle.scale.multiplyScalar(newTheme.particleScale + Math.random() * 2);
+        newParticle.material.opacity = 0;
+        scene.add(newParticle);
+
+        newParticles.push(newParticle);
+    }
+
+    isShapeTransitioning = true;
+    shapeTransitionProgress = 0;
+}
+
+// 更新形状过渡
+function updateShapeTransition() {
+    if (!isShapeTransitioning) return;
+
+    shapeTransitionProgress += 0.015;
+
+    if (shapeTransitionProgress >= 1) {
+        shapeTransitionProgress = 1;
+        isShapeTransitioning = false;
+
+        // 清理旧粒子
+        for (var i = 0; i < oldParticles.length; i++) {
+            scene.remove(oldParticles[i]);
+        }
+
+        // 替换粒子数组
+        particles_globe = newParticles;
+        oldParticles = [];
+        newParticles = [];
+        return;
+    }
+
+    var theme = themes[currentTheme];
+    var t = easeInOutCubic(shapeTransitionProgress);
+
+    // 旧粒子淡出
+    for (var i = 0; i < oldParticles.length; i++) {
+        var oldP = oldParticles[i];
+        var newP = newParticles[i];
+
+        // 旧粒子淡出
+        oldP.material.opacity = theme.particleOpacity * (1 - t);
+
+        // 旧粒子缩小
+        var oldScale = oldP.scale.x;
+        var targetOldScale = 0.5;
+        oldP.scale.set(
+            oldScale * 0.98 + targetOldScale * 0.02,
+            oldScale * 0.98 + targetOldScale * 0.02,
+            oldScale * 0.98 + targetOldScale * 0.02
+        );
+
+        // 新粒子淡入
+        newP.material.opacity = theme.particleOpacity * t;
+
+        // 新粒子从 0 放大到目标大小
+        var targetNewScale = theme.particleScale + (Math.sin(i) * 0.5 + 1);
+        var currentNewScale = newP.scale.x;
+        newP.scale.set(
+            currentNewScale * 0.95 + targetNewScale * t * 0.05,
+            currentNewScale * 0.95 + targetNewScale * t * 0.05,
+            currentNewScale * 0.95 + targetNewScale * t * 0.05
+        );
+
+        // 同步位置
+        newP.position.copy(oldP.position);
+    }
+}
+
+// 背景过渡相关变量
+var bgTransitionProgress = 1;
+var isBgTransitioning = false;
+var bgOldTheme = null;
+var bgNewTheme = null;
+
+// 带过渡的背景渐变更新
+function updateBackgroundGradientWithTransition(oldTheme, newTheme) {
+    bgOldTheme = oldTheme;
+    bgNewTheme = newTheme;
+    bgTransitionProgress = 0;
+    isBgTransitioning = true;
+}
+
+// 更新背景过渡
+function updateBackgroundTransition() {
+    if (!isBgTransitioning) return;
+
+    bgTransitionProgress += 0.015;
+
+    if (bgTransitionProgress >= 1) {
+        bgTransitionProgress = 1;
+        isBgTransitioning = false;
+        bgOldTheme = null;
+        bgNewTheme = null;
+
+        // 最终设置新背景
+        var $canvas = $('#webgl-canvas');
+        $canvas.css('background', themes[currentTheme].background);
+        return;
+    }
+
+    var t = easeInOutCubic(bgTransitionProgress);
+
+    // 创建中间过渡的渐变
+    var $canvas = $('#webgl-canvas');
+
+    // 解析颜色并插值
+    var color1 = lerpColorHex(bgOldTheme.backgroundColor1, bgNewTheme.backgroundColor1, t);
+    var color2 = lerpColorHex(bgOldTheme.backgroundColor2, bgNewTheme.backgroundColor2, t);
+    var color3 = lerpColorHex(bgOldTheme.backgroundColor3, bgNewTheme.backgroundColor3, t);
+
+    var gradient = 'linear-gradient(45deg, ' + color1 + ' 0, ' + color2 + ' 25%, ' + color3 + ' 60%)';
+    $canvas.css('background', gradient);
+}
+
+// 十六进制颜色插值
+function lerpColorHex(color1Hex, color2Hex, t) {
+    // 移除 # 号
+    var c1 = color1Hex.replace('#', '');
+    var c2 = color2Hex.replace('#', '');
+
+    // 解析 RGB
+    var r1 = parseInt(c1.substring(0, 2), 16);
+    var g1 = parseInt(c1.substring(2, 4), 16);
+    var b1 = parseInt(c1.substring(4, 6), 16);
+
+    var r2 = parseInt(c2.substring(0, 2), 16);
+    var g2 = parseInt(c2.substring(2, 4), 16);
+    var b2 = parseInt(c2.substring(4, 6), 16);
+
+    // 插值
+    var r = Math.round(r1 + (r2 - r1) * t);
+    var g = Math.round(g1 + (g2 - g1) * t);
+    var b = Math.round(b1 + (b2 - b1) * t);
+
+    // 转回十六进制
+    return '#' +
+        ('0' + r.toString(16)).slice(-2) +
+        ('0' + g.toString(16)).slice(-2) +
+        ('0' + b.toString(16)).slice(-2);
 }
 
 // 更新背景渐变
@@ -890,47 +1095,80 @@ function createThemeButtons() {
     // 移除已存在的按钮容器
     $('#theme-switcher').remove();
 
-    var $container = $('<div id="theme-switcher" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 10px;"></div>');
+    var $container = $('<div id="theme-switcher" style="position: fixed; top: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 12px;"></div>');
 
     var themeKeys = Object.keys(themes);
     for (var i = 0; i < themeKeys.length; i++) {
         var key = themeKeys[i];
         var theme = themes[key];
+        var isActive = key === currentTheme;
 
         var $btn = $('<button class="theme-btn" data-theme="' + key + '"></button>');
-        $btn.css({
-            padding: '10px 16px',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderRadius: '8px',
-            background: key === currentTheme ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.3)',
-            color: '#fff',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontFamily: 'Arial, sans-serif',
-            transition: 'all 0.3s ease',
-            backdropFilter: 'blur(10px)'
-        });
-        $btn.text(theme.name);
 
+        // 基础样式
+        var baseStyles = {
+            padding: '14px 20px',
+            border: '2px solid ' + theme.buttonBorder,
+            borderRadius: '12px',
+            background: isActive ? theme.buttonBg : 'rgba(0,0,0,0.2)',
+            color: theme.buttonColor,
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: '600',
+            fontFamily: '"Segoe UI", Arial, sans-serif',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            minWidth: '110px',
+            boxShadow: isActive ? '0 4px 20px ' + theme.buttonColor + '30' : 'none',
+            transform: isActive ? 'scale(1.05)' : 'scale(1)'
+        };
+
+        $btn.css(baseStyles);
+
+        // 设置内容：图标 + 文字
+        $btn.html('<span style="font-size: 18px; text-shadow: 0 0 10px ' + theme.buttonColor + '50;">' + theme.icon + '</span> ' + theme.name);
+
+        // 悬停效果
         $btn.hover(function() {
-            $(this).css({
-                background: 'rgba(255,255,255,0.15)',
-                borderColor: 'rgba(255,255,255,0.5)'
-            });
-        }, function() {
-            if ($(this).data('theme') === currentTheme) {
+            var btnThemeKey = $(this).data('theme');
+            var btnTheme = themes[btnThemeKey];
+            var isBtnActive = btnThemeKey === currentTheme;
+
+            if (!isBtnActive) {
                 $(this).css({
-                    background: 'rgba(255,255,255,0.2)',
-                    borderColor: 'rgba(255,255,255,0.3)'
+                    background: btnTheme.buttonBg,
+                    borderColor: btnTheme.buttonColor,
+                    boxShadow: '0 4px 15px ' + btnTheme.buttonColor + '20',
+                    transform: 'translateX(-5px) scale(1.02)'
+                });
+            }
+        }, function() {
+            var btnThemeKey = $(this).data('theme');
+            var isBtnActive = btnThemeKey === currentTheme;
+            var btnTheme = themes[btnThemeKey];
+
+            if (isBtnActive) {
+                $(this).css({
+                    background: btnTheme.buttonBg,
+                    borderColor: btnTheme.buttonBorder,
+                    boxShadow: '0 4px 20px ' + btnTheme.buttonColor + '30',
+                    transform: 'scale(1.05)'
                 });
             } else {
                 $(this).css({
-                    background: 'rgba(0,0,0,0.3)',
-                    borderColor: 'rgba(255,255,255,0.3)'
+                    background: 'rgba(0,0,0,0.2)',
+                    borderColor: btnTheme.buttonBorder,
+                    boxShadow: 'none',
+                    transform: 'translateX(0) scale(1)'
                 });
             }
         });
 
+        // 点击事件
         $btn.click(function() {
             var themeName = $(this).data('theme');
             switchTheme(themeName);
@@ -946,15 +1184,23 @@ function createThemeButtons() {
 function updateThemeButtons() {
     $('.theme-btn').each(function() {
         var $btn = $(this);
-        if ($btn.data('theme') === currentTheme) {
+        var btnThemeKey = $btn.data('theme');
+        var btnTheme = themes[btnThemeKey];
+        var isActive = btnThemeKey === currentTheme;
+
+        if (isActive) {
             $btn.css({
-                background: 'rgba(255,255,255,0.2)',
-                borderColor: 'rgba(255,255,255,0.5)'
+                background: btnTheme.buttonBg,
+                borderColor: btnTheme.buttonColor,
+                boxShadow: '0 4px 20px ' + btnTheme.buttonColor + '30',
+                transform: 'scale(1.05)'
             });
         } else {
             $btn.css({
-                background: 'rgba(0,0,0,0.3)',
-                borderColor: 'rgba(255,255,255,0.3)'
+                background: 'rgba(0,0,0,0.2)',
+                borderColor: btnTheme.buttonBorder,
+                boxShadow: 'none',
+                transform: 'scale(1)'
             });
         }
     });
@@ -1048,20 +1294,82 @@ function renderGlobe() {
 
     camera.lookAt(scene.position);
 
-    // 更新主题过渡
+    // 更新背景过渡
+    updateBackgroundTransition();
+
+    // 更新形状过渡
+    updateShapeTransition();
+
+    // 更新主题过渡（颜色等）
     updateThemeTransition();
 
-    // 更新粒子动画
+    // 更新粒子动画 - 使用主题的波浪振幅
     var i = 0;
-    for (i = 0; i < particles_globe.length; i++) {
-        particle = particles_globe[i];
-        var temp = (Math.sin((i + count) * 0.3) * 50) + (Math.sin((i + count) * 0.5) * 0.50);
+    var waveAmp = theme.waveAmplitude;
+    var pulseInt = theme.pulseIntensity;
 
-        opacity = (Math.abs(temp) / 50) + theme.particleOpacity;
+    // 如果在形状过渡中，更新两组粒子
+    if (isShapeTransitioning) {
+        // 更新旧粒子
+        for (i = 0; i < oldParticles.length; i++) {
+            var oldP = oldParticles[i];
+            var temp = (Math.sin((i + count) * 0.3) * waveAmp) + (Math.sin((i + count) * 0.5) * (waveAmp * 0.01));
 
-        if (opacity > 1)
-            opacity = 1;
-        particle.material.opacity = opacity;
+            oldP.position.y = temp * 0.3;
+
+            // 脉冲效果
+            var pulseScale = 1 + Math.sin((i + count) * 0.5) * pulseInt * 0.3;
+            var baseScale = oldP.scale.x;
+            oldP.scale.set(
+                baseScale * pulseScale,
+                baseScale * pulseScale,
+                baseScale * pulseScale
+            );
+        }
+
+        // 更新新粒子
+        for (i = 0; i < newParticles.length; i++) {
+            var newP = newParticles[i];
+            var temp = (Math.sin((i + count) * 0.3) * waveAmp) + (Math.sin((i + count) * 0.5) * (waveAmp * 0.01));
+
+            newP.position.y = temp * 0.3;
+
+            // 脉冲效果
+            var pulseScale = 1 + Math.sin((i + count) * 0.5) * pulseInt * 0.3;
+            var baseScale = newP.scale.x;
+            newP.scale.set(
+                baseScale * pulseScale,
+                baseScale * pulseScale,
+                baseScale * pulseScale
+            );
+        }
+    } else {
+        // 正常更新
+        for (i = 0; i < particles_globe.length; i++) {
+            particle = particles_globe[i];
+            var temp = (Math.sin((i + count) * 0.3) * waveAmp) + (Math.sin((i + count) * 0.5) * (waveAmp * 0.01));
+
+            // 波浪动画
+            particle.position.y = temp * 0.3;
+
+            // 透明度动画
+            opacity = (Math.abs(temp) / waveAmp) * 0.5 + theme.particleOpacity;
+
+            if (opacity > 1)
+                opacity = 1;
+            if (opacity < theme.particleOpacity * 0.5)
+                opacity = theme.particleOpacity * 0.5;
+            particle.material.opacity = opacity;
+
+            // 脉冲缩放效果 - 根据主题强度
+            var pulseScale = 1 + Math.sin((i + count) * 0.5) * pulseInt * 0.3;
+            var baseScale = theme.particleScale + (Math.sin(i * 0.1) * 0.5 + 1);
+            particle.scale.set(
+                baseScale * pulseScale,
+                baseScale * pulseScale,
+                baseScale * pulseScale
+            );
+        }
     }
 
     // 更新爆炸效果
