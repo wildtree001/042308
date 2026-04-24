@@ -6,11 +6,6 @@
     <title>标题特效</title>
 </head>
 <style type="text/css">
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
 #webgl-canvas{
 	display: block;
 	position: absolute;
@@ -31,63 +26,12 @@
 {
 	/*opacity: 0.9;*/
 }
-
-.theme-selector {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-    display: flex;
-    gap: 10px;
-}
-
-.theme-btn {
-    padding: 8px 16px;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    background: rgba(0, 0, 0, 0.3);
-    color: white;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s ease;
-}
-
-.theme-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.8);
-}
-
-.theme-btn.active {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: white;
-}
-
-#star-theme {
-    background: linear-gradient(135deg, #0c0d13 0%, #1a1b2e 50%, #2d2f4a 100%);
-}
-
-#ocean-theme {
-    background: linear-gradient(135deg, #000428 0%, #004e92 100%);
-}
-
-#fire-theme {
-    background: linear-gradient(135deg, #4a0000 0%, #c70000 50%, #ff4d00 100%);
-}
-
-#aurora-theme {
-    background: linear-gradient(135deg, #0a2a3f 0%, #1e6f5c 50%, #33cc8c 100%);
-}
-
+	
 </style>
 <body>
 	<div id="webGL" class="webGL" data-color="light">
         <div  id="webgl-canvas"></div>
-        <div class="theme-selector">
-            <button class="theme-btn active" id="star-theme" data-theme="star">星空</button>
-            <button class="theme-btn" id="ocean-theme" data-theme="ocean">海洋</button>
-            <button class="theme-btn" id="fire-theme" data-theme="fire">火焰</button>
-            <button class="theme-btn" id="aurora-theme" data-theme="aurora">极光</button>
-        </div>
+
         
     </div>
 </body>
@@ -97,16 +41,6 @@
 <script type="text/javascript">
 	$(document).ready(function(){
 		webglWave('init','webGL');
-		
-		// 主题切换事件
-		$('.theme-btn').click(function(){
-			var theme = $(this).data('theme');
-			$('.theme-btn').removeClass('active');
-			$(this).addClass('active');
-			
-			// 调用主题切换函数
-			changeTheme(theme);
-		});
 	});
 </script>
 </html>
