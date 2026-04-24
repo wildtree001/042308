@@ -395,6 +395,20 @@ body {
 	color: #fff;
 }
 
+.artist-info .artist-basic {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+
+.artist-info .artist-tag {
+	background: rgba(255, 255, 255, 0.15);
+	color: #fff;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 12px;
+}
+
 .artist-info .works {
 	color: rgba(255, 255, 255, 0.7);
 	font-size: 14px;
@@ -600,12 +614,14 @@ body {
 	padding: 5px 15px;
 	background: rgba(0, 0, 0, 0.3);
 	border-radius: 15px;
-	animation: danmakuMove linear forwards;
+	transform: translateX(100vw);
+	right: 0;
+	transition: transform linear;
 }
 
 @keyframes danmakuMove {
 	from {
-		transform: translateX(0);
+		transform: translateX(100vw);
 	}
 	to {
 		transform: translateX(calc(-100% - 100vw));
@@ -626,25 +642,27 @@ body {
 }
 
 .ticket-card {
-	background: rgba(255, 255, 255, 0.08);
+	background: linear-gradient(135deg, rgba(107, 19, 211, 0.6), rgba(122, 37, 225, 0.6));
 	backdrop-filter: blur(10px);
 	border-radius: 15px;
 	padding: 30px;
 	text-align: center;
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.2);
 	transition: all 0.3s ease;
 	position: relative;
 	overflow: hidden;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .ticket-card:hover {
 	transform: translateY(-5px);
-	border-color: rgba(255, 255, 255, 0.3);
+	border-color: rgba(255, 255, 255, 0.4);
+	box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
 }
 
 .ticket-card.featured {
-	background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(254, 202, 87, 0.2));
-	border-color: rgba(255, 255, 255, 0.3);
+	background: linear-gradient(135deg, rgba(255, 107, 107, 0.4), rgba(254, 202, 87, 0.4));
+	border-color: rgba(254, 202, 87, 0.6);
 }
 
 .ticket-card.featured::before {
@@ -664,6 +682,8 @@ body {
 	font-size: 24px;
 	font-weight: bold;
 	margin-bottom: 10px;
+	color: #fff;
+	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .ticket-price {
@@ -671,15 +691,16 @@ body {
 	font-weight: bold;
 	color: #feca57;
 	margin-bottom: 5px;
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .ticket-price span {
 	font-size: 16px;
-	color: rgba(255, 255, 255, 0.6);
+	color: rgba(255, 255, 255, 0.7);
 }
 
 .ticket-desc {
-	color: rgba(255, 255, 255, 0.7);
+	color: rgba(255, 255, 255, 0.8);
 	margin-bottom: 25px;
 	font-size: 14px;
 }
@@ -692,7 +713,7 @@ body {
 
 .ticket-features li {
 	padding: 8px 0;
-	color: rgba(255, 255, 255, 0.8);
+	color: rgba(255, 255, 255, 0.9);
 	font-size: 14px;
 }
 
@@ -961,21 +982,22 @@ body {
 
 .my-tickets {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-	gap: 20px;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 15px;
 }
 
 .my-ticket-card {
-	background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-	border-radius: 15px;
+	background: linear-gradient(135deg, rgba(107, 19, 211, 0.8), rgba(122, 37, 225, 0.8));
+	border-radius: 12px;
 	overflow: hidden;
-	border: 2px solid rgba(254, 202, 87, 0.5);
+	border: 2px solid rgba(254, 202, 87, 0.6);
 	position: relative;
+	box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
 .ticket-header {
 	background: linear-gradient(90deg, #ff6b6b, #feca57);
-	padding: 15px 20px;
+	padding: 10px 15px;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -983,31 +1005,33 @@ body {
 
 .ticket-header h4 {
 	color: #333;
-	font-size: 16px;
+	font-size: 14px;
 }
 
 .ticket-status {
-	background: rgba(0, 0, 0, 0.2);
+	background: rgba(255, 255, 255, 0.3);
 	color: #333;
-	padding: 5px 15px;
-	border-radius: 15px;
-	font-size: 12px;
+	padding: 4px 12px;
+	border-radius: 12px;
+	font-size: 11px;
 	font-weight: bold;
 }
 
 .ticket-body {
-	padding: 25px;
+	padding: 15px;
 }
 
 .ticket-body h3 {
-	font-size: 22px;
-	margin-bottom: 15px;
+	font-size: 18px;
+	margin-bottom: 12px;
+	color: #fff;
+	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .ticket-detail-row {
 	display: flex;
 	justify-content: space-between;
-	padding: 10px 0;
+	padding: 6px 0;
 	border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
 }
 
@@ -1016,34 +1040,37 @@ body {
 }
 
 .ticket-detail-label {
-	color: rgba(255, 255, 255, 0.6);
+	color: rgba(255, 255, 255, 0.7);
+	font-size: 13px;
 }
 
 .ticket-detail-value {
 	font-weight: bold;
+	color: #feca57;
+	font-size: 13px;
 }
 
 .ticket-qr {
 	text-align: center;
-	padding: 20px;
-	background: rgba(255, 255, 255, 0.05);
+	padding: 15px;
+	background: rgba(0, 0, 0, 0.1);
 }
 
 .qr-placeholder {
-	width: 120px;
-	height: 120px;
-	background: #fff;
-	margin: 0 auto 10px;
+	width: 80px;
+	height: 80px;
+	background: linear-gradient(135deg, #ff6b6b, #feca57);
+	margin: 0 auto 8px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 40px;
-	border-radius: 10px;
+	font-size: 30px;
+	border-radius: 8px;
 }
 
 .ticket-qr p {
-	color: rgba(255, 255, 255, 0.6);
-	font-size: 12px;
+	color: rgba(255, 255, 255, 0.7);
+	font-size: 11px;
 }
 
 /* 页面滚动 */
@@ -1107,7 +1134,7 @@ html {
 						<p>50+当红艺人</p>
 					</div>
 				</div>
-				<p class="hint">👆 点击查看详细日程安排</p>
+				<p class="hint">👆 点击展开详细日程，再点击收起</p>
 			</div>
 
 			<!-- 日程安排面板 -->
@@ -1335,7 +1362,10 @@ html {
 			{
 				id: 1,
 				name: '周杰伦',
-				avatar: '🎤',
+				gender: 'male',
+				avatar: '👨',
+				nationality: '中国台湾',
+				genre: '流行/R&B',
 				works: '《七里香》《晴天》《青花瓷》',
 				performanceTime: '5月1日 15:30',
 				desc: '华语流行音乐天王，创作歌手、音乐人、演员、导演。代表作无数，影响了整整一代人的青春记忆。',
@@ -1345,7 +1375,10 @@ html {
 			{
 				id: 2,
 				name: '邓紫棋',
-				avatar: '🎵',
+				gender: 'female',
+				avatar: '👩',
+				nationality: '中国香港',
+				genre: '流行/创作',
 				works: '《光年之外》《泡沫》《喜欢你》',
 				performanceTime: '5月1日 17:00',
 				desc: '华语乐坛创作才女，以其独特的嗓音和出色的创作才华著称。',
@@ -1355,7 +1388,10 @@ html {
 			{
 				id: 3,
 				name: '林俊杰',
-				avatar: '🎹',
+				gender: 'male',
+				avatar: '👨',
+				nationality: '新加坡',
+				genre: '流行/抒情',
 				works: '《江南》《曹操》《修炼爱情》',
 				performanceTime: '5月1日 20:00',
 				desc: '新加坡华语流行歌手、词曲创作者、音乐制作人。',
@@ -1365,7 +1401,10 @@ html {
 			{
 				id: 4,
 				name: '华晨宇',
-				avatar: '🔥',
+				gender: 'male',
+				avatar: '�',
+				nationality: '中国大陆',
+				genre: '流行/摇滚',
 				works: '《烟火里的尘埃》《齐天》《斗牛》',
 				performanceTime: '5月2日 15:30',
 				desc: '中国内地男歌手，以其独特的音乐风格和舞台表现力著称。',
@@ -1375,7 +1414,10 @@ html {
 			{
 				id: 5,
 				name: '张艺兴',
-				avatar: '💃',
+				gender: 'male',
+				avatar: '�',
+				nationality: '中国大陆',
+				genre: '流行/舞曲',
 				works: '《莲》《NAMANANA》《HONEY》',
 				performanceTime: '5月2日 17:00',
 				desc: '中国内地流行乐男歌手、影视演员，全能型艺人。',
@@ -1385,7 +1427,10 @@ html {
 			{
 				id: 6,
 				name: '毛不易',
-				avatar: '🎸',
+				gender: 'male',
+				avatar: '👨',
+				nationality: '中国大陆',
+				genre: '民谣/流行',
 				works: '《消愁》《像我这样的人》《不染》',
 				performanceTime: '5月3日 15:30',
 				desc: '中国内地流行乐男歌手，以真挚的歌词和动人的旋律打动人心。',
@@ -1395,7 +1440,10 @@ html {
 			{
 				id: 7,
 				name: '陈粒',
-				avatar: '🌟',
+				gender: 'female',
+				avatar: '👩',
+				nationality: '中国大陆',
+				genre: '独立/民谣',
 				works: '《奇妙能力歌》《小半》《走马》',
 				performanceTime: '5月3日 17:00',
 				desc: '中国内地独立音乐人、唱作人，以独特的音乐风格和个性著称。',
@@ -1405,7 +1453,10 @@ html {
 			{
 				id: 8,
 				name: '朴树',
-				avatar: '🍃',
+				gender: 'male',
+				avatar: '👨',
+				nationality: '中国大陆',
+				genre: '摇滚/民谣',
 				works: '《平凡之路》《生如夏花》《那些花儿》',
 				performanceTime: '5月3日 20:00',
 				desc: '中国内地男歌手、音乐制作人，华语乐坛传奇人物。',
@@ -1483,6 +1534,10 @@ html {
 					<div class="artist-avatar" style="background: linear-gradient(135deg, ${artist.themeColor} 0%, ${adjustColor(artist.themeColor, -30)} 100%);">${artist.avatar}</div>
 					<div class="artist-info">
 						<h3>${artist.name}</h3>
+						<div class="artist-basic">
+							<span class="artist-tag">${artist.nationality}</span>
+							<span class="artist-tag">${artist.genre}</span>
+						</div>
 						<p class="works">${artist.works}</p>
 						<span class="performance-time">${artist.performanceTime}</span>
 					</div>
@@ -1672,16 +1727,11 @@ html {
 			const areaHeight = area.offsetHeight - 40;
 			const top = Math.random() * areaHeight;
 			danmaku.style.top = top + 'px';
-			danmaku.style.right = '-100%';
 			
 			const duration = 8 + Math.random() * 4;
-			danmaku.style.animationDuration = duration + 's';
+			danmaku.style.animation = `danmakuMove ${duration}s linear forwards`;
 			
 			area.appendChild(danmaku);
-			
-			setTimeout(() => {
-				danmaku.style.right = '100%';
-			}, 10);
 			
 			setTimeout(() => {
 				danmaku.remove();
