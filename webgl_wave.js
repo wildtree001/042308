@@ -316,6 +316,8 @@ function animateGlobe() {
 
 /* Globe Animation */
 function renderGlobe() {
+	updateParticleColors();
+	
     var $webglCanvas = $('body:hover');
 
     var x = camera.position.x, y = camera.position.y, z = camera.position.z;
@@ -526,11 +528,77 @@ function onDocumentTouchStart( event ) {
 /* User interaction */
 function onDocumentTouchMove( event ) {
 
-    if ( event.touches.length === 1 ) {
-        event.preventDefault();
+	if ( event.touches.length === 1 ) {
+		event.preventDefault();
 
-        mouseX = event.touches[ 0 ].pageX - windowHalfX;
-        /* mouseY = event.touches[ 0 ].pageY - windowHalfY;*/
-        mouseY = - event.touches[ 0 ].pageY;
-    }
+		mouseX = event.touches[ 0 ].pageX - windowHalfX;
+		/* mouseY = event.touches[ 0 ].pageY - windowHalfY;*/
+		mouseY = - event.touches[ 0 ].pageY;
+	}
+}
+
+/* 主题色切换功能 */
+var currentParticleColor = 0xffffff;
+var targetParticleColor = 0xffffff;
+var colorTransitionProgress = 1;
+
+function hexToRgb(hex) {
+	var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	return result ? {
+		r: parseInt(result[1], 16),
+		g: parseInt(result[2], 16),
+		b: parseInt(result[3], 16)
+	} : null;
+}
+
+function rgbToHex(r, g, b) {
+	return "0x" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function parseColorToHex(color) {
+	if (typeof color === 'string' && color.startsWith('#')) {
+		var rgb = hexToRgb(color);
+		if (rgb) {
+			return parseInt(rgbToHex(rgb.r, rgb.g, rgb.b));
+		}
+	}
+	return color;
+}
+
+function changeParticleColor(color) {
+	targetParticleColor = parseColorToHex(color);
+	colorTransitionProgress = 0;
+}
+
+function updateParticleColors() {
+	if (colorTransitionProgress >= 1) return;
+	
+	colorTransitionProgress += 0.02;
+	if (colorTransitionProgress > 1) colorTransitionProgress = 1;
+	
+	var startR = (currentParticleColor >> 16) & 255;
+	var startG = (currentParticleColor >> 8) & 255;
+	var startB = currentParticleColor & 255;
+	
+	var endR = (targetParticleColor >> 16) & 255;
+	var endG = (targetParticleColor >> 8) & 255;
+	var endB = targetParticleColor & 255;
+	
+	var newR = Math.round(startR + (endR - startR) * colorTransitionProgress);
+	var newG = Math.round(startG + (endG - startG) * colorTransitionProgress);
+	var newB = Math.round(startB + (endB - startB) * colorTransitionProgress);
+	
+	var newColor = (newR << 16) | (newG << 8) | newB;
+	
+	if (particles_globe && particles_globe.length > 0) {
+		for (var i = 0; i < particles_globe.length; i++) {
+			if (particles_globe[i] && particles_globe[i].material) {
+				particles_globe[i].material.color.setHex(newColor);
+			}
+		}
+	}
+	
+	if (colorTransitionProgress >= 1) {
+		currentParticleColor = targetParticleColor;
+	}
 }
