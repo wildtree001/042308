@@ -18,6 +18,85 @@ var $viewPort = $(document);
 var $_body = $('body');
 var $_html = $('html');
 
+// 主题配置系统
+var themes = {
+    star: {
+        name: '星空',
+        backgroundColor: '#0c0d13',
+        backgroundGradient: 'linear-gradient(135deg, #0c0d13 0%, #1a1b2e 50%, #2d2f4a 100%)',
+        particleColors: [0xffffff, 0xffffd7, 0x87ceeb, 0xe6e6fa],
+        particleShape: 'circle',
+        animationSpeed: 0.1,
+        rotationSpeed: 0.002,
+        particleOpacity: 0.1,
+        particleSize: 4,
+        connectionLineColor: 0xffffff,
+        connectionLineOpacity: 0.3,
+        explosionColors: [0xffffff, 0xffff00, 0xff6600, 0xff00ff]
+    },
+    ocean: {
+        name: '海洋',
+        backgroundColor: '#000428',
+        backgroundGradient: 'linear-gradient(135deg, #000428 0%, #004e92 100%)',
+        particleColors: [0x00bfff, 0x1e90ff, 0x4169e1, 0x00ffff],
+        particleShape: 'circle',
+        animationSpeed: 0.08,
+        rotationSpeed: 0.001,
+        particleOpacity: 0.15,
+        particleSize: 5,
+        connectionLineColor: 0x00bfff,
+        connectionLineOpacity: 0.4,
+        explosionColors: [0x00bfff, 0x00ffff, 0x4169e1, 0x1e90ff]
+    },
+    fire: {
+        name: '火焰',
+        backgroundColor: '#4a0000',
+        backgroundGradient: 'linear-gradient(135deg, #4a0000 0%, #c70000 50%, #ff4d00 100%)',
+        particleColors: [0xff4500, 0xff6347, 0xff8c00, 0xffd700],
+        particleShape: 'circle',
+        animationSpeed: 0.15,
+        rotationSpeed: 0.003,
+        particleOpacity: 0.2,
+        particleSize: 6,
+        connectionLineColor: 0xff4500,
+        connectionLineOpacity: 0.5,
+        explosionColors: [0xff4500, 0xff0000, 0xffd700, 0xff8c00]
+    },
+    aurora: {
+        name: '极光',
+        backgroundColor: '#0a2a3f',
+        backgroundGradient: 'linear-gradient(135deg, #0a2a3f 0%, #1e6f5c 50%, #33cc8c 100%)',
+        particleColors: [0x33cc8c, 0x00ff7f, 0x7cfc00, 0x00fa9a],
+        particleShape: 'circle',
+        animationSpeed: 0.06,
+        rotationSpeed: 0.0015,
+        particleOpacity: 0.12,
+        particleSize: 5,
+        connectionLineColor: 0x33cc8c,
+        connectionLineOpacity: 0.35,
+        explosionColors: [0x33cc8c, 0x00ff7f, 0x7cfc00, 0x00fa9a]
+    }
+};
+
+// 当前主题
+var currentTheme = 'star';
+
+// 粒子连线效果相关变量
+var connectionLines = [];
+var connectionThreshold = 100; // 粒子连接阈值
+var mousePosition = new THREE.Vector3();
+var mouseRaycaster = new THREE.Raycaster();
+var connectionLineMaterial;
+
+// 爆炸效果相关变量
+var explosionParticles = [];
+var explosionActive = false;
+
+// 过渡效果相关变量
+var isTransitioning = false;
+var transitionProgress = 0;
+var previousTheme = null;
+
 function webglWave(action, target){
 
     if( $_body.hasClass('ismobile') || $_html.hasClass('ie9'))
@@ -100,6 +179,220 @@ function webglWave(action, target){
             }
         }
     }
+}
+
+// 主题切换函数
+function changeTheme(themeName) {
+    if (themeName === currentTheme || isTransitioning) return;
+    
+    // 开始过渡效果
+    isTransitioning = true;
+    transitionProgress = 0;
+    previousTheme = currentTheme;
+    currentTheme = themeName;
+    
+    // 更新背景渐变
+    updateBackgroundGradient();
+    
+    // 更新动画参数
+    var theme = themes[themeName];
+    rotation_speed = theme.rotationSpeed;
+    
+    // 更新粒子颜色
+    updateParticleColors();
+    
+    // 更新连线材质
+    if (connectionLineMaterial) {
+        connectionLineMaterial.color.setHex(theme.connectionLineColor);
+        connectionLineMaterial.opacity = theme.connectionLineOpacity;
+    }
+}
+
+// 更新背景渐变
+function updateBackgroundGradient() {
+    var theme = themes[currentTheme];
+    var canvas = document.getElementById('webgl-canvas');
+    if (canvas) {
+        canvas.style.background = theme.backgroundGradient;
+    }
+}
+
+// 更新粒子颜色
+function updateParticleColors() {
+    var theme = themes[currentTheme];
+    var colorIndex = 0;
+    
+    for (var i = 0; i < particles_globe.length; i++) {
+        var particle = particles_globe[i];
+        if (particle.material && particle.material.color) {
+            var color = theme.particleColors[colorIndex % theme.particleColors.length];
+            particle.material.color.setHex(color);
+            colorIndex++;
+        }
+    }
+}
+
+// 创建连线材质
+function createConnectionLineMaterial() {
+    var theme = themes[currentTheme];
+    return new THREE.LineBasicMaterial({
+        color: theme.connectionLineColor,
+        opacity: theme.connectionLineOpacity,
+        transparent: true
+    });
+}
+
+// 更新粒子连线
+function updateParticleConnections() {
+    // 移除旧的连线
+    for (var i = 0; i < connectionLines.length; i++) {
+        scene.remove(connectionLines[i]);
+    }
+    connectionLines = [];
+    
+    // 如果没有鼠标位置，不创建连线
+    if (mousePosition.x === 0 && mousePosition.y === 0) return;
+    
+    var theme = themes[currentTheme];
+    
+    // 找到鼠标附近的粒子
+    var nearbyParticles = [];
+    var mouseThreshold = 200; // 鼠标影响范围
+    
+    for (var i = 0; i < particles_globe.length; i++) {
+        var particle = particles_globe[i];
+        var distance = particle.position.distanceTo(mousePosition);
+        
+        if (distance < mouseThreshold) {
+            nearbyParticles.push(particle);
+        }
+    }
+    
+    // 在附近粒子之间创建连线
+    for (var i = 0; i < nearbyParticles.length; i++) {
+        for (var j = i + 1; j < nearbyParticles.length; j++) {
+            var p1 = nearbyParticles[i];
+            var p2 = nearbyParticles[j];
+            var distance = p1.position.distanceTo(p2.position);
+            
+            if (distance < connectionThreshold) {
+                // 创建连线
+                var geometry = new THREE.Geometry();
+                geometry.vertices.push(p1.position.clone());
+                geometry.vertices.push(p2.position.clone());
+                
+                var line = new THREE.Line(geometry, connectionLineMaterial);
+                scene.add(line);
+                connectionLines.push(line);
+            }
+        }
+    }
+}
+
+// 创建爆炸效果
+function createExplosion(x, y) {
+    var theme = themes[currentTheme];
+    var explosionCount = 50; // 爆炸粒子数量
+    
+    // 将屏幕坐标转换为3D空间坐标
+    var vector = new THREE.Vector3(
+        (x / window.innerWidth) * 2 - 1,
+        -(y / window.innerHeight) * 2 + 1,
+        0.5
+    );
+    vector.unproject(camera);
+    var dir = vector.sub(camera.position).normalize();
+    var distance = -camera.position.z / dir.z;
+    var explosionPosition = camera.position.clone().add(dir.multiplyScalar(distance));
+    
+    // 创建爆炸粒子
+    for (var i = 0; i < explosionCount; i++) {
+        var material = new THREE.SpriteCanvasMaterial({
+            color: theme.explosionColors[Math.floor(Math.random() * theme.explosionColors.length)],
+            transparent: true,
+            program: function(context) {
+                context.beginPath();
+                context.arc(0, 0, 0.5, 0, Math.PI * 2, true);
+                context.fill();
+            }
+        });
+        
+        var particle = new THREE.Sprite(material);
+        particle.position.copy(explosionPosition);
+        particle.scale.multiplyScalar(2 + Math.random() * 3);
+        particle.material.opacity = 1;
+        
+        // 爆炸速度和方向
+        particle.velocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 20,
+            (Math.random() - 0.5) * 20,
+            (Math.random() - 0.5) * 20
+        );
+        
+        // 生命周期
+        particle.life = 1;
+        particle.decay = 0.02 + Math.random() * 0.02;
+        
+        scene.add(particle);
+        explosionParticles.push(particle);
+    }
+    
+    explosionActive = true;
+}
+
+// 更新爆炸粒子
+function updateExplosionParticles() {
+    if (!explosionActive || explosionParticles.length === 0) return;
+    
+    var particlesToRemove = [];
+    
+    for (var i = 0; i < explosionParticles.length; i++) {
+        var particle = explosionParticles[i];
+        
+        // 更新位置
+        particle.position.add(particle.velocity);
+        
+        // 应用重力
+        particle.velocity.y -= 0.5;
+        
+        // 减小生命周期
+        particle.life -= particle.decay;
+        particle.material.opacity = particle.life;
+        
+        // 减小尺寸
+        particle.scale.multiplyScalar(0.98);
+        
+        // 标记需要移除的粒子
+        if (particle.life <= 0) {
+            particlesToRemove.push(i);
+        }
+    }
+    
+    // 移除已消失的粒子
+    for (var i = particlesToRemove.length - 1; i >= 0; i--) {
+        var index = particlesToRemove[i];
+        scene.remove(explosionParticles[index]);
+        explosionParticles.splice(index, 1);
+    }
+    
+    if (explosionParticles.length === 0) {
+        explosionActive = false;
+    }
+}
+
+// 更新过渡效果
+function updateTransition() {
+    if (!isTransitioning) return;
+    
+    transitionProgress += 0.02;
+    
+    if (transitionProgress >= 1) {
+        isTransitioning = false;
+        transitionProgress = 1;
+    }
+    
+    // 这里可以添加更复杂的过渡效果
+    // 比如粒子大小变化、透明度变化等
 }
 
 /* WAVE */
@@ -249,13 +542,23 @@ function initGlobe(target) {
         context.arc( 0, 0, 25, 0, PI2, true );
         context.fill();
     }
+    
+    // 获取当前主题
+    var theme = themes[currentTheme];
+    
+    // 创建连线材质
+    connectionLineMaterial = createConnectionLineMaterial();
 
     var PI2 = Math.PI * 2;
     for ( var i = 0; i < 500; i ++ ) {
+        
+        // 从主题中随机选择颜色
+        var colorIndex = i % theme.particleColors.length;
+        var particleColor = theme.particleColors[colorIndex];
 
         var material = new THREE.SpriteCanvasMaterial( {
 
-            color: 0xffffff,
+            color: particleColor,
             transparent : true,
             program: function ( context ) {
                 context.beginPath();
@@ -270,8 +573,8 @@ function initGlobe(target) {
         particle.position.z = Math.random() * 2 - 1;
         particle.position.normalize();
         particle.position.multiplyScalar( Math.random() * 10 + 450 );
-        particle.scale.multiplyScalar( 4 + Math.random()*2 );
-        particle.material.opacity = 0.1;
+        particle.scale.multiplyScalar( theme.particleSize + Math.random()*2 );
+        particle.material.opacity = theme.particleOpacity;
         scene.add( particle );
 
         particles_globe.push(particle);
@@ -304,6 +607,9 @@ function initGlobe(target) {
     renderer.setClearColor( 0x0000, 0);
     renderer.setSize(  window.innerWidth , window.innerHeight );
     container.appendChild( renderer.domElement );
+    
+    // 初始化背景
+    updateBackgroundGradient();
 }
 
 /* Globe animation start */
@@ -343,22 +649,34 @@ function renderGlobe() {
     camera.lookAt( scene.position );
 
      var i = 0;
+     
+     // 获取当前主题
+     var theme = themes[currentTheme];
 
     for ( var i = 0; i < particles_globe.length ; i ++ ) {
 
         particle = particles_globe[ i++ ];
         temp = ( Math.sin( ( i + count ) * 0.3 ) * 50 ) + ( Math.sin( ( i + count ) * 0.5 ) * 0.50 );
 
-        opacity = (Math.abs(temp) /50) + 0.1
+        opacity = (Math.abs(temp) /50) + theme.particleOpacity
 
         if (opacity > 1)
             opacity = 1;
         particle.material.opacity = opacity;
     }
+    
+    // 更新粒子连线
+    updateParticleConnections();
+    
+    // 更新爆炸粒子
+    updateExplosionParticles();
+    
+    // 更新过渡效果
+    updateTransition();
 
     renderer.render( scene, camera );
 
-    count += 0.1;
+    count += theme.animationSpeed;
 
     renderer.render( scene, camera );
 }
@@ -372,12 +690,18 @@ function killAnimationGlobe(){
        }
     }
     $('#webgl-canvas > canvas').remove();
+    
+    // 清空粒子数组
+    particles_globe = [];
+    explosionParticles = [];
+    connectionLines = [];
 }
 
 /* Pause the animation*/
 function stopAnimationGlobe(animation_id){
     cancelAnimationFrame(animation_id);
 }
+
 
 
 /* GLOBE ERROR*/
@@ -494,12 +818,14 @@ function addRemoveListeners(action){
         document.addEventListener( 'touchstart', onDocumentTouchStart, false );
         document.addEventListener( 'touchmove', onDocumentTouchMove, false );
         window.addEventListener( 'resize', onWindowResize, false );
+        document.addEventListener( 'click', onDocumentClick, false );
     }
     else{
         document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
         document.removeEventListener( 'touchstart', onDocumentTouchStart, false );
         document.removeEventListener( 'touchmove', onDocumentTouchMove, false );
         window.removeEventListener( 'resize', onWindowResize, false );
+        document.removeEventListener( 'click', onDocumentClick, false );
     }
 }
 
@@ -509,6 +835,23 @@ function onDocumentMouseMove( event ) {
     mouseX = event.clientX - windowHalfX;
     /*mouseY = event.clientY - windowHalfY;*/
     mouseY = event.clientY + 150;
+    
+    // 更新鼠标位置用于粒子连线
+    updateMousePosition(event.clientX, event.clientY);
+}
+
+// 更新鼠标位置
+function updateMousePosition(x, y) {
+    // 将屏幕坐标转换为3D空间坐标
+    var vector = new THREE.Vector3(
+        (x / window.innerWidth) * 2 - 1,
+        -(y / window.innerHeight) * 2 + 1,
+        0.5
+    );
+    vector.unproject(camera);
+    var dir = vector.sub(camera.position).normalize();
+    var distance = -camera.position.z / dir.z;
+    mousePosition = camera.position.clone().add(dir.multiplyScalar(distance));
 }
 
 /* User interaction */
@@ -520,6 +863,12 @@ function onDocumentTouchStart( event ) {
         mouseX = event.touches[ 0 ].pageX - windowHalfX;
         /*mouseY = event.touches[ 0 ].pageY - windowHalfY;*/
         mouseY = - event.touches[ 0 ].pageY;
+        
+        // 更新触摸位置
+        updateMousePosition(event.touches[0].pageX, event.touches[0].pageY);
+        
+        // 触摸时也创建爆炸效果
+        createExplosion(event.touches[0].pageX, event.touches[0].pageY);
     }
 }
 
@@ -532,5 +881,14 @@ function onDocumentTouchMove( event ) {
         mouseX = event.touches[ 0 ].pageX - windowHalfX;
         /* mouseY = event.touches[ 0 ].pageY - windowHalfY;*/
         mouseY = - event.touches[ 0 ].pageY;
+        
+        // 更新触摸位置
+        updateMousePosition(event.touches[0].pageX, event.touches[0].pageY);
     }
+}
+
+// 鼠标点击事件处理
+function onDocumentClick(event) {
+    // 创建爆炸效果
+    createExplosion(event.clientX, event.clientY);
 }
